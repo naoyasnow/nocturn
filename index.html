@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BAR NOCTURN — 人とAIが集うオンラインバー</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Zen+Kaku+Gothic+New:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0705;
+    --surface: #110e0a;
+    --amber: #c8832a;
+    --amber-dim: #7a4e18;
+    --amber-glow: rgba(200,131,42,0.15);
+    --cream: #e8dcc8;
+    --cream-dim: #9a8e7a;
+    --border: rgba(200,131,42,0.2);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--cream);
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.6;
+  }
+
+  .screen { display: none; min-height: 100vh; }
+  .screen.active { display: flex; }
+
+  /* ══ ENTRANCE ══ */
+  #entrance {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .entrance-bg {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 28% 55% at 50% 72%, rgba(200,131,42,0.28) 0%, rgba(200,100,20,0.10) 40%, transparent 70%),
+      radial-gradient(ellipse 60% 20% at 50% 100%, rgba(200,131,42,0.18) 0%, transparent 60%),
+      radial-gradient(ellipse 15% 25% at 22% 55%, rgba(255,200,80,0.12) 0%, transparent 55%),
+      radial-gradient(ellipse 15% 25% at 78% 55%, rgba(255,200,80,0.10) 0%, transparent 55%),
+      linear-gradient(to bottom, #050303 0%, #0e0905 40%, #150c06 70%, #0a0502 100%);
+  }
+
+  .entrance-door {
+    position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 180px; height: 320px; z-index: 1;
+  }
+  .door-frame {
+    position: absolute; inset: 0;
+    border: 3px solid #3a2a14; border-bottom: none;
+    border-top-left-radius: 90px; border-top-right-radius: 90px;
+    background: linear-gradient(to bottom, #1a0e05 0%, #240f04 30%, #1e0d04 100%);
+    box-shadow: inset 0 0 40px rgba(200,131,42,0.08), 0 0 60px rgba(200,131,42,0.15), 0 0 120px rgba(200,131,42,0.08);
+  }
+  .door-light {
+    position: absolute; inset: 12px;
+    border-top-left-radius: 80px; border-top-right-radius: 80px;
+    background: radial-gradient(ellipse at 50% 100%, rgba(200,131,42,0.35) 0%, rgba(180,100,20,0.15) 40%, transparent 70%);
+    animation: doorGlow 4s ease-in-out infinite;
+  }
+  @keyframes doorGlow { 0%,100%{opacity:1} 50%{opacity:0.7} }
+  .door-center { position: absolute; top:20px; bottom:0; left:50%; width:1px; background:linear-gradient(to bottom,#3a2a14,transparent); }
+  .door-knob { position: absolute; width:8px; height:8px; border-radius:50%; background:radial-gradient(circle,#d4a040,#8a5a20); top:55%; right:20px; box-shadow:0 0 6px rgba(200,131,42,0.6); }
+  .door-sign { position:absolute; top:60px; left:50%; transform:translateX(-50%); text-align:center; width:100px; }
+  .door-sign-text { font-family:'Cormorant Garamond',serif; font-size:11px; letter-spacing:0.25em; color:rgba(200,131,42,0.6); }
+  .door-sign-line { width:60px; height:1px; background:rgba(200,131,42,0.3); margin:6px auto; }
+
+  .lamp { position:absolute; bottom:0; width:6px; }
+  .lamp-left { left:calc(50% - 140px); }
+  .lamp-right { right:calc(50% - 140px); }
+  .lamp-pole { width:3px; height:220px; background:linear-gradient(to bottom,#3a2a14,#2a1e0a); margin:0 auto; }
+  .lamp-head { width:20px; height:10px; background:#3a2a14; border-radius:4px 4px 0 0; margin:0 auto; position:relative; }
+  .lamp-glow { position:absolute; width:30px; height:30px; border-radius:50%; background:radial-gradient(circle,rgba(255,200,80,0.5),transparent 70%); top:-10px; left:-5px; animation:lampFlicker 3s ease-in-out infinite; }
+  @keyframes lampFlicker { 0%,100%{opacity:1} 33%{opacity:0.8} 66%{opacity:0.95} }
+
+  .cobble { position:absolute; bottom:0; left:0; right:0; height:80px; background: repeating-linear-gradient(90deg,rgba(50,35,15,0.4) 0px,rgba(50,35,15,0.4) 40px,rgba(40,28,10,0.3) 40px,rgba(40,28,10,0.3) 80px), repeating-linear-gradient(0deg,rgba(60,42,18,0.3) 0px,rgba(60,42,18,0.3) 20px,rgba(45,32,12,0.2) 20px,rgba(45,32,12,0.2) 40px), linear-gradient(to top,rgba(200,131,42,0.08),transparent); }
+  .mist { position:absolute; bottom:60px; left:0; right:0; height:80px; background:linear-gradient(to top,rgba(200,131,42,0.04) 0%,transparent 100%); animation:mistDrift 8s ease-in-out infinite; }
+  @keyframes mistDrift { 0%,100%{transform:translateX(0);opacity:1} 50%{transform:translateX(10px);opacity:0.7} }
+
+  .entrance-content {
+    position: relative; z-index: 10; text-align: center;
+    animation: fadeUp 1.5s ease forwards;
+    margin-bottom: 260px;
+  }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:translateY(0)} }
+
+  .bar-logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(52px, 10vw, 96px);
+    font-weight: 300; letter-spacing: 0.25em; color: var(--amber);
+    text-shadow: 0 0 40px rgba(200,131,42,0.4), 0 0 80px rgba(200,131,42,0.15);
+    line-height: 1;
+  }
+  .bar-subtitle {
+    font-family: 'Cormorant Garamond', serif; font-style: italic;
+    font-size: clamp(13px,2vw,17px); color: var(--cream-dim);
+    letter-spacing: 0.4em; margin-top: 12px; margin-bottom: 60px;
+  }
+  .divider { width:120px; height:1px; background:linear-gradient(to right,transparent,var(--amber),transparent); margin:0 auto 48px; }
+
+  .entrance-btns { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+
+  .enter-btn {
+    display: inline-block; padding: 16px 48px;
+    border: 1px solid var(--amber-dim); color: var(--amber);
+    font-family: 'Zen Kaku Gothic New', sans-serif; font-size: 13px;
+    font-weight: 300; letter-spacing: 0.3em; cursor: pointer;
+    background: transparent; transition: all 0.5s ease;
+    position: relative; overflow: hidden; min-width: 220px;
+  }
+  .enter-btn::before { content:''; position:absolute; inset:0; background:var(--amber-glow); transform:scaleX(0); transform-origin:left; transition:transform 0.4s ease; }
+  .enter-btn:hover::before { transform:scaleX(1); }
+  .enter-btn:hover { border-color:var(--amber); box-shadow:0 0 30px rgba(200,131,42,0.2); }
+  .enter-btn span { position:relative; z-index:1; }
+
+  .enter-btn-sub {
+    display: inline-block; padding: 12px 48px;
+    border: 1px solid rgba(200,131,42,0.15); color: var(--cream-dim);
+    font-family: 'Zen Kaku Gothic New', sans-serif; font-size: 11px;
+    font-weight: 300; letter-spacing: 0.3em; cursor: pointer;
+    background: transparent; transition: all 0.4s ease; min-width: 220px;
+  }
+  .enter-btn-sub:hover { border-color: rgba(200,131,42,0.4); color: var(--cream); }
+
+  .entrance-note { margin-top: 28px; font-size: 11px; color: var(--cream-dim); letter-spacing: 0.15em; opacity: 0.6; }
+
+  /* ══ SEATS ══ */
+  #seats { flex-direction: column; }
+  .bar-header { display:flex; align-items:center; justify-content:space-between; padding:24px 40px; border-bottom:1px solid var(--border); position:sticky; top:0; background:rgba(10,7,5,0.9); backdrop-filter:blur(12px); z-index:100; }
+  .bar-header-logo { font-family:'Cormorant Garamond',serif; font-size:22px; letter-spacing:0.3em; color:var(--amber); cursor:pointer; }
+  .bar-header-nav { display:flex; gap:24px; align-items:center; }
+  .nav-link { font-size:11px; letter-spacing:0.2em; color:var(--cream-dim); cursor:pointer; transition:color 0.2s; }
+  .nav-link:hover { color:var(--amber); }
+  .token-badge { display:flex; align-items:center; gap:10px; padding:8px 18px; border:1px solid var(--border); font-size:12px; letter-spacing:0.1em; color:var(--cream-dim); }
+  .token-count { color:var(--amber); font-size:15px; }
+
+  .seats-body { padding:60px 40px; max-width:1100px; margin:0 auto; width:100%; }
+  .seats-heading { font-family:'Cormorant Garamond',serif; font-size:13px; font-style:italic; color:var(--cream-dim); letter-spacing:0.3em; margin-bottom:48px; }
+  .seats-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:1px; background:var(--border); border:1px solid var(--border); }
+
+  .seat-card { background:var(--surface); padding:36px 30px; cursor:pointer; transition:all 0.3s ease; position:relative; overflow:hidden; }
+  .seat-card::after { content:''; position:absolute; bottom:0; left:0; right:0; height:2px; background:var(--amber); transform:scaleX(0); transition:transform 0.3s ease; }
+  .seat-card:hover { background:#17120d; }
+  .seat-card:hover::after { transform:scaleX(1); }
+  .seat-card.featured { background:linear-gradient(135deg,#17120d 0%,#1a1108 100%); border-left:2px solid var(--amber); }
+  .char-role { font-size:10px; letter-spacing:0.3em; color:var(--amber-dim); margin-bottom:8px; text-transform:uppercase; }
+  .char-name { font-family:'Cormorant Garamond',serif; font-size:28px; font-weight:400; color:var(--cream); margin-bottom:6px; }
+  .char-tagline { font-size:12px; color:var(--cream-dim); line-height:1.7; margin-bottom:20px; min-height:40px; }
+  .char-tags { display:flex; gap:8px; flex-wrap:wrap; }
+  .tag { font-size:10px; padding:3px 10px; border:1px solid rgba(200,131,42,0.2); color:var(--cream-dim); letter-spacing:0.1em; }
+  .char-status { position:absolute; top:24px; right:24px; width:6px; height:6px; border-radius:50%; background:#3d8a3d; box-shadow:0 0 8px rgba(61,138,61,0.8); animation:pulse 2s ease-in-out infinite; }
+  .char-hours { position:absolute; bottom:14px; right:16px; font-size:9px; color:var(--amber-dim); letter-spacing:0.1em; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .seat-card.coming-soon { opacity:0.35; cursor:not-allowed; pointer-events:none; }
+  .soon-badge { position:absolute; top:20px; right:20px; font-size:9px; letter-spacing:0.2em; color:var(--cream-dim); border:1px solid var(--border); padding:3px 8px; }
+  .seats-footer { margin-top:80px; padding-top:40px; border-top:1px solid var(--border); text-align:center; }
+  .seats-footer p { font-family:'Cormorant Garamond',serif; font-style:italic; font-size:14px; color:var(--cream-dim); letter-spacing:0.2em; }
+
+  /* ══ ABOUT ══ */
+  #about { flex-direction: column; }
+
+  .about-body {
+    padding: 80px 40px 120px;
+    max-width: 860px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .about-hero {
+    text-align: center;
+    margin-bottom: 100px;
+    padding-bottom: 60px;
+    border-bottom: 1px solid var(--border);
+  }
+  .about-hero-eyebrow {
+    font-size: 10px; letter-spacing: 0.4em; color: var(--amber-dim);
+    text-transform: uppercase; margin-bottom: 24px;
+  }
+  .about-hero-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(36px, 6vw, 64px);
+    font-weight: 300; line-height: 1.2; color: var(--cream);
+    margin-bottom: 32px;
+  }
+  .about-hero-title em { font-style: italic; color: var(--amber); }
+  .about-hero-lead {
+    font-size: 14px; line-height: 2.2; color: var(--cream-dim);
+    max-width: 560px; margin: 0 auto;
+  }
+
+  /* カクテル装飾 */
+  .cocktail-row {
+    display: flex; justify-content: center; gap: 40px;
+    margin: 60px 0; align-items: flex-end;
+  }
+  .cocktail {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    opacity: 0.7;
+  }
+  .cocktail-glass {
+    position: relative;
+  }
+  /* SVG cocktail glasses */
+  .cocktail svg { display: block; }
+  .cocktail-label {
+    font-size: 9px; letter-spacing: 0.2em; color: var(--cream-dim);
+    text-align: center; margin-top: 8px;
+  }
+
+  /* About sections */
+  /* セクション区切りアイコン */
+  .section-divider {
+    display: flex; align-items: center; gap: 20px;
+    margin-bottom: 72px; margin-top: 16px;
+  }
+  .section-divider-line {
+    flex: 1; height: 1px;
+    background: linear-gradient(to right, transparent, rgba(200,131,42,0.25), transparent);
+  }
+  .section-divider-icon {
+    flex-shrink: 0; opacity: 0.55;
+  }
+
+  .about-section { margin-bottom: 80px; }
+  .about-section-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 11px; letter-spacing: 0.4em; color: var(--amber-dim);
+    margin-bottom: 16px;
+  }
+  .about-section-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 26px; font-weight: 400; color: var(--cream);
+    margin-bottom: 20px; letter-spacing: 0.05em;
+  }
+  .about-section-body {
+    font-size: 13px; line-height: 2.4; color: var(--cream-dim);
+  }
+  .about-section-body p { margin-bottom: 16px; }
+  .about-section-body strong { color: var(--cream); font-weight: 400; }
+
+  /* フェーズロードマップ */
+  .roadmap { margin-top: 32px; }
+  .roadmap-item {
+    display: flex; gap: 24px; padding: 20px 0;
+    border-bottom: 1px solid rgba(200,131,42,0.08);
+  }
+  .roadmap-item:last-child { border-bottom: none; }
+  .roadmap-phase {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 11px; letter-spacing: 0.2em; color: var(--amber-dim);
+    min-width: 80px; padding-top: 2px;
+  }
+  .roadmap-active .roadmap-phase { color: var(--amber); }
+  .roadmap-content-title { font-size: 13px; color: var(--cream); margin-bottom: 4px; }
+  .roadmap-content-desc { font-size: 12px; color: var(--cream-dim); line-height: 1.8; }
+  .roadmap-badge {
+    display: inline-block; font-size: 9px; padding: 2px 8px;
+    border: 1px solid var(--amber); color: var(--amber);
+    letter-spacing: 0.15em; margin-left: 8px; vertical-align: middle;
+  }
+
+  /* 出勤時間テーブル */
+  .hours-table { margin-top: 28px; border: 1px solid var(--border); }
+  .hours-row { display:flex; border-bottom: 1px solid rgba(200,131,42,0.1); }
+  .hours-row:last-child { border-bottom: none; }
+  .hours-row.header { background: rgba(200,131,42,0.05); }
+  .hours-cell { padding: 14px 20px; font-size: 12px; }
+  .hours-cell:first-child { min-width: 100px; color: var(--amber); font-family:'Cormorant Garamond',serif; font-size:15px; }
+  .hours-cell.role-cell { min-width: 140px; color: var(--cream-dim); font-size:10px; letter-spacing:0.15em; }
+  .hours-cell.time-cell { color: var(--cream-dim); flex:1; font-size:11px; }
+  .hours-cell.header { color: var(--cream-dim); font-size:10px; letter-spacing:0.2em; }
+
+  /* Podcast ロゴ */
+  .podcast-block {
+    margin-top: 40px;
+    border: 1px solid var(--border);
+    padding: 40px;
+    background: linear-gradient(135deg, rgba(200,131,42,0.04) 0%, transparent 60%);
+    position: relative;
+    overflow: hidden;
+  }
+  .podcast-block::before {
+    content: '🎙';
+    position: absolute; right: 30px; top: 24px;
+    font-size: 40px; opacity: 0.08;
+  }
+  .podcast-logo {
+    display: flex; align-items: center; gap: 20px; margin-bottom: 20px;
+  }
+  .podcast-icon {
+    width: 64px; height: 64px; flex-shrink: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+  /* Podcast SVG icon */
+  .podcast-title-area {}
+  .podcast-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18px; color: var(--amber); letter-spacing: 0.1em;
+    line-height: 1.2; margin-bottom: 4px;
+  }
+  .podcast-tagline-small {
+    font-size: 10px; color: var(--cream-dim); letter-spacing: 0.2em;
+  }
+  .podcast-desc {
+    font-size: 12px; color: var(--cream-dim); line-height: 2.0;
+  }
+
+  /* 無料キャンペーン */
+  .campaign-block {
+    margin-top: 40px; padding: 32px 40px;
+    border: 1px solid rgba(200,131,42,0.35);
+    background: rgba(200,131,42,0.04);
+    position: relative;
+  }
+  .campaign-badge {
+    position: absolute; top: -1px; left: 40px;
+    background: var(--amber); color: var(--bg);
+    font-size: 9px; letter-spacing: 0.2em; padding: 4px 12px;
+    font-weight: 400;
+  }
+  .campaign-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 20px; color: var(--cream); margin-bottom: 12px; margin-top: 16px;
+  }
+  .campaign-body { font-size: 12px; color: var(--cream-dim); line-height: 2.0; }
+  .campaign-token {
+    display: inline-block; margin-top: 16px;
+    padding: 10px 24px; border: 1px solid var(--amber-dim);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 16px; color: var(--amber); letter-spacing: 0.1em;
+  }
+
+  /* CTA */
+  .about-cta {
+    text-align: center; margin-top: 100px;
+    padding-top: 60px; border-top: 1px solid var(--border);
+  }
+  .about-cta-label {
+    font-family: 'Cormorant Garamond', serif; font-style: italic;
+    font-size: 14px; color: var(--cream-dim); letter-spacing: 0.2em;
+    margin-bottom: 32px;
+  }
+
+  /* ══ CHAT ══ */
+  #chat { flex-direction: column; height: 100vh; }
+  .chat-header { display:flex; align-items:center; gap:20px; padding:18px 32px; border-bottom:1px solid var(--border); background:rgba(10,7,5,0.95); backdrop-filter:blur(12px); }
+  .back-btn { background:none; border:none; color:var(--cream-dim); cursor:pointer; font-size:18px; padding:4px 8px; transition:color 0.2s; }
+  .back-btn:hover { color:var(--amber); }
+  .chat-char-info { flex:1; }
+  .chat-char-name { font-family:'Cormorant Garamond',serif; font-size:20px; color:var(--cream); }
+  .chat-char-role { font-size:11px; color:var(--cream-dim); letter-spacing:0.2em; }
+  .chat-token-badge { font-size:11px; color:var(--cream-dim); border:1px solid var(--border); padding:6px 14px; }
+  .chat-token-badge span { color:var(--amber); }
+  .chat-body { flex:1; overflow-y:auto; padding:40px 32px; display:flex; flex-direction:column; gap:28px; background:linear-gradient(to bottom,#0a0705 0%,#0d0a07 100%); }
+  .chat-body::-webkit-scrollbar { width:2px; }
+  .chat-body::-webkit-scrollbar-thumb { background:var(--amber-dim); }
+  .msg { display:flex; gap:16px; max-width:680px; animation:msgIn 0.4s ease forwards; opacity:0; }
+  @keyframes msgIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+  .msg.user { flex-direction:row-reverse; align-self:flex-end; }
+  .msg-avatar { width:36px; height:36px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-family:'Cormorant Garamond',serif; font-size:14px; color:var(--amber); flex-shrink:0; background:var(--surface); }
+  .msg-content { display:flex; flex-direction:column; gap:4px; }
+  .msg-name { font-size:10px; letter-spacing:0.2em; color:var(--cream-dim); }
+  .msg.user .msg-name { text-align:right; }
+  .msg-bubble { padding:14px 18px; font-size:14px; line-height:1.8; color:var(--cream); background:var(--surface); border:1px solid var(--border); }
+  .msg.user .msg-bubble { background:rgba(200,131,42,0.08); border-color:rgba(200,131,42,0.25); }
+  .typing-indicator { display:flex; align-items:center; gap:5px; padding:14px 18px; background:var(--surface); border:1px solid var(--border); width:fit-content; }
+  .typing-dot { width:5px; height:5px; border-radius:50%; background:var(--amber-dim); animation:typing 1.2s ease-in-out infinite; }
+  .typing-dot:nth-child(2){animation-delay:0.2s} .typing-dot:nth-child(3){animation-delay:0.4s}
+  @keyframes typing { 0%,60%,100%{transform:translateY(0);opacity:0.4} 30%{transform:translateY(-5px);opacity:1} }
+  .chat-footer { border-top:1px solid var(--border); padding:20px 32px; background:rgba(10,7,5,0.95); }
+  .chat-input-wrap { display:flex; align-items:flex-end; gap:12px; background:var(--surface); border:1px solid var(--border); padding:14px 18px; transition:border-color 0.2s; }
+  .chat-input-wrap:focus-within { border-color:var(--amber-dim); }
+  #chat-input { flex:1; background:none; border:none; outline:none; color:var(--cream); font-family:'Zen Kaku Gothic New',sans-serif; font-size:14px; font-weight:300; resize:none; max-height:120px; line-height:1.6; }
+  #chat-input::placeholder { color:var(--cream-dim); opacity:0.5; }
+  .send-btn { background:none; border:1px solid var(--amber-dim); color:var(--amber); cursor:pointer; padding:8px 18px; font-size:12px; letter-spacing:0.15em; font-family:'Zen Kaku Gothic New',sans-serif; transition:all 0.2s; flex-shrink:0; }
+  .send-btn:hover { background:var(--amber-glow); border-color:var(--amber); }
+  .chat-footer-note { margin-top:10px; font-size:10px; color:var(--cream-dim); letter-spacing:0.1em; opacity:0.5; text-align:center; }
+
+  /* transition */
+  .fade-in { animation:fadeInScreen 0.6s ease forwards; }
+  @keyframes fadeInScreen { from{opacity:0} to{opacity:1} }
+</style>
+</head>
+<body>
+
+<!-- ══ ENTRANCE ══ -->
+<div id="entrance" class="screen active">
+  <div class="entrance-bg"></div>
+  <div class="lamp lamp-left">
+    <div class="lamp-head"><div class="lamp-glow"></div></div>
+    <div class="lamp-pole"></div>
+  </div>
+  <div class="lamp lamp-right">
+    <div class="lamp-head"><div class="lamp-glow" style="animation-delay:-1.2s"></div></div>
+    <div class="lamp-pole"></div>
+  </div>
+  <div class="entrance-door">
+    <div class="door-frame">
+      <div class="door-light"></div>
+      <div class="door-center"></div>
+      <div class="door-knob"></div>
+      <div class="door-sign">
+        <div class="door-sign-line"></div>
+        <div class="door-sign-text">OPEN</div>
+        <div class="door-sign-line"></div>
+      </div>
+    </div>
+  </div>
+  <div class="cobble"></div>
+  <div class="mist"></div>
+  <div class="entrance-content">
+    <div class="bar-logo">NOCTURN</div>
+    <div class="bar-subtitle">人とAIが集うオンラインバー</div>
+    <div class="divider"></div>
+    <div class="entrance-btns">
+      <button class="enter-btn" onclick="goToSeats()"><span>扉を開ける</span></button>
+      <button class="enter-btn-sub" onclick="goToAbout()">初めてのお客様へ</button>
+    </div>
+    <p class="entrance-note">本日も営業中 — 席数に限りがあります</p>
+  </div>
+</div>
+
+<!-- ══ SEATS ══ -->
+<div id="seats" class="screen">
+  <header class="bar-header">
+    <div class="bar-header-logo" onclick="goToEntrance()">NOCTURN</div>
+    <nav class="bar-header-nav">
+      <span class="nav-link" onclick="goToAbout()">初めての方へ</span>
+    </nav>
+    <div class="token-badge">残高 <span class="token-count">350</span> トークン</div>
+  </header>
+  <div class="seats-body">
+    <p class="seats-heading">— 今夜、どの席に座りますか —</p>
+    <div class="seats-grid">
+
+      <div class="seat-card featured" onclick="goToChat('ken')">
+        <div class="char-status"></div>
+        <div class="char-role">マスター</div>
+        <div class="char-name">ケン</div>
+        <div class="char-tagline">昼は大企業の人事部長、夜はカウンターで転職相談を聞く寡黙な男。自分も3回転職している。</div>
+        <div class="char-tags"><span class="tag">キャリア</span><span class="tag">転職</span><span class="tag">本音</span></div>
+        <div class="char-hours">毎夜 20:00〜02:00</div>
+      </div>
+
+      <div class="seat-card" onclick="goToChat('mio')">
+        <div class="char-status"></div>
+        <div class="char-role">常連客</div>
+        <div class="char-name">ミオ</div>
+        <div class="char-tagline">臨床心理士だけど仕事の話はしない主義。でも話しかけると不思議と楽になる。</div>
+        <div class="char-tags"><span class="tag">メンタル</span><span class="tag">傾聴</span><span class="tag">癒し</span></div>
+        <div class="char-hours">月〜金 21:00〜01:00</div>
+      </div>
+
+      <div class="seat-card" onclick="goToChat('riku')">
+        <div class="char-status"></div>
+        <div class="char-role">バーテンダー見習い</div>
+        <div class="char-name">リク</div>
+        <div class="char-tagline">元アスリート。カクテルを作りながら食事や睡眠の話をしてくれる。明るくて少し押しつけがましい。</div>
+        <div class="char-tags"><span class="tag">健康</span><span class="tag">食事</span><span class="tag">運動</span></div>
+        <div class="char-hours">毎日 18:00〜23:00</div>
+      </div>
+
+      <div class="seat-card" onclick="goToChat('shige')">
+        <div class="char-status"></div>
+        <div class="char-role">常連おじさん</div>
+        <div class="char-name">シゲ</div>
+        <div class="char-tagline">証券会社OBで今は悠々自適。お金の話を酒の肴にするのが好き。毒舌だが的を射ている。</div>
+        <div class="char-tags"><span class="tag">投資</span><span class="tag">資産形成</span><span class="tag">本音</span></div>
+        <div class="char-hours">火・木・土 20:00〜深夜</div>
+      </div>
+
+      <div class="seat-card" onclick="goToChat('luna')">
+        <div class="char-status"></div>
+        <div class="char-role">謎の女</div>
+        <div class="char-name">ルナ</div>
+        <div class="char-tagline">名前も素性も不明。気づくとカウンターにいて、不思議な話をしかけてくる。</div>
+        <div class="char-tags"><span class="tag">謎解き</span><span class="tag">ゲーム</span><span class="tag">対話</span></div>
+        <div class="char-hours">不定期 — 満月の夜に多い</div>
+      </div>
+
+      <div class="seat-card" onclick="goToChat('saki')">
+        <div class="char-status"></div>
+        <div class="char-role">ガール</div>
+        <div class="char-name">サキ</div>
+        <div class="char-tagline">ため口で話す大人の女性。聞き上手で、なぜか本音を引き出してしまう。</div>
+        <div class="char-tags"><span class="tag">雑談</span><span class="tag">愚痴</span><span class="tag">共感</span></div>
+        <div class="char-hours">水・金・土 21:00〜03:00</div>
+      </div>
+
+      <div class="seat-card" onclick="goToChat('haru')">
+        <div class="char-status"></div>
+        <div class="char-role">常連客</div>
+        <div class="char-name">ハル</div>
+        <div class="char-tagline">何があっても「まあいっか」と言う。人生を諦めているのか達観しているのかわからない。</div>
+        <div class="char-tags"><span class="tag">ポジティブ</span><span class="tag">哲学</span><span class="tag">雑談</span></div>
+        <div class="char-hours">毎日 22:00〜いつでも</div>
+      </div>
+
+      <div class="seat-card coming-soon">
+        <div class="soon-badge">COMING SOON</div>
+        <div class="char-role">あなたのAI</div>
+        <div class="char-name">— ?</div>
+        <div class="char-tagline">ユーザーが作成したAIがここに現れる。あなたも紹介できます。</div>
+      </div>
+
+      <div class="seat-card coming-soon">
+        <div class="soon-badge">COMING SOON</div>
+        <div class="char-role">マスター席</div>
+        <div class="char-name">— ?</div>
+        <div class="char-tagline">本物の人間があなたを待っている席が、そのうち開く。</div>
+      </div>
+
+    </div>
+    <div class="seats-footer">
+      <p>今夜も良い夜を。そして、もうすぐここには新しい顔ぶれが加わります。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ABOUT ══ -->
+<div id="about" class="screen">
+  <header class="bar-header">
+    <div class="bar-header-logo" onclick="goToEntrance()">NOCTURN</div>
+    <nav class="bar-header-nav">
+      <span class="nav-link" onclick="goToSeats()">席を見る</span>
+    </nav>
+    <div class="token-badge">残高 <span class="token-count-about">350</span> トークン</div>
+  </header>
+
+  <div class="about-body">
+
+    <!-- HERO -->
+    <div class="about-hero">
+      <div class="about-hero-eyebrow">ABOUT NOCTURN</div>
+      <h1 class="about-hero-title">
+        素顔を脱いで、<br><em>オンラインバーで。</em>
+      </h1>
+      <p class="about-hero-lead">
+        NOCTURNは、オンラインバーです。<br>
+        ひとりで抱えている悩みも、誰かに聞いてほしい話も、
+        ただ今夜の暇をつぶしたいだけでも——<br>
+        カウンターにはいつも、誰かがいます。
+      </p>
+    </div>
+
+    <!-- カクテル装飾 -->
+    <div class="cocktail-row">
+      <!-- Martini -->
+      <div class="cocktail">
+        <svg width="40" height="60" viewBox="0 0 40 60" fill="none">
+          <polygon points="4,8 36,8 20,36" fill="rgba(200,131,42,0.15)" stroke="rgba(200,131,42,0.5)" stroke-width="1.2"/>
+          <line x1="20" y1="36" x2="20" y2="52" stroke="rgba(200,131,42,0.4)" stroke-width="1.2"/>
+          <line x1="12" y1="52" x2="28" y2="52" stroke="rgba(200,131,42,0.4)" stroke-width="1.2"/>
+          <circle cx="30" cy="12" r="3" fill="rgba(200,80,80,0.6)"/>
+        </svg>
+        <div class="cocktail-label">MARTINI</div>
+      </div>
+      <!-- Old Fashioned -->
+      <div class="cocktail">
+        <svg width="40" height="60" viewBox="0 0 40 60" fill="none">
+          <rect x="8" y="20" width="24" height="28" rx="2" fill="rgba(180,100,20,0.2)" stroke="rgba(200,131,42,0.5)" stroke-width="1.2"/>
+          <rect x="6" y="18" width="28" height="5" rx="1" fill="rgba(200,131,42,0.3)" stroke="rgba(200,131,42,0.4)" stroke-width="1"/>
+          <ellipse cx="20" cy="22" rx="10" ry="3" fill="rgba(200,131,42,0.25)"/>
+          <circle cx="26" cy="25" r="2.5" fill="rgba(200,80,80,0.5)"/>
+          <line x1="26" y1="22" x2="26" y2="16" stroke="rgba(200,131,42,0.4)" stroke-width="0.8"/>
+        </svg>
+        <div class="cocktail-label">OLD FASHIONED</div>
+      </div>
+      <!-- Wine -->
+      <div class="cocktail">
+        <svg width="36" height="68" viewBox="0 0 36 68" fill="none">
+          <ellipse cx="18" cy="10" rx="10" ry="5" fill="rgba(139,32,32,0.3)" stroke="rgba(139,32,32,0.5)" stroke-width="1.2"/>
+          <path d="M8,10 Q6,28 12,34 Q14,36 18,36 Q22,36 24,34 Q30,28 28,10" fill="rgba(139,32,32,0.15)" stroke="rgba(139,32,32,0.4)" stroke-width="1.2"/>
+          <line x1="18" y1="36" x2="18" y2="54" stroke="rgba(139,32,32,0.4)" stroke-width="1.2"/>
+          <ellipse cx="18" cy="56" rx="10" ry="2.5" fill="none" stroke="rgba(139,32,32,0.4)" stroke-width="1"/>
+        </svg>
+        <div class="cocktail-label">RED WINE</div>
+      </div>
+      <!-- Highball -->
+      <div class="cocktail">
+        <svg width="36" height="64" viewBox="0 0 36 64" fill="none">
+          <rect x="6" y="10" width="24" height="46" rx="2" fill="rgba(200,131,42,0.1)" stroke="rgba(200,131,42,0.45)" stroke-width="1.2"/>
+          <rect x="6" y="38" width="24" height="18" rx="0" fill="rgba(200,131,42,0.2)"/>
+          <line x1="22" y1="10" x2="26" y2="4" stroke="rgba(200,200,200,0.4)" stroke-width="1"/>
+          <ellipse cx="14" cy="32" rx="3" ry="3" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.15)" stroke-width="0.8"/>
+        </svg>
+        <div class="cocktail-label">HIGHBALL</div>
+      </div>
+      <!-- Negroni -->
+      <div class="cocktail">
+        <svg width="40" height="58" viewBox="0 0 40 58" fill="none">
+          <path d="M10,14 L8,48 L32,48 L30,14 Z" fill="rgba(180,60,20,0.15)" stroke="rgba(180,80,20,0.5)" stroke-width="1.2"/>
+          <path d="M10,14 L8,28 L32,28 L30,14 Z" fill="rgba(180,60,20,0.3)"/>
+          <line x1="8" y1="14" x2="32" y2="14" stroke="rgba(200,131,42,0.5)" stroke-width="1.2"/>
+          <circle cx="28" cy="18" r="3" fill="rgba(255,160,0,0.5)"/>
+          <line x1="28" y1="15" x2="30" y2="8" stroke="rgba(200,131,42,0.5)" stroke-width="0.8"/>
+        </svg>
+        <div class="cocktail-label">NEGRONI</div>
+      </div>
+    </div>
+
+    <!-- 01 世界観 -->
+    <div class="about-section">
+      <div class="about-section-num">01</div>
+      <h2 class="about-section-title">NOCTURNとは、何か。</h2>
+      <div class="about-section-body">
+        <p>夜、誰かと話したいと思ったことはありませんか。でも電話するほどではない。SNSに書くほど整理されていない。ただ、カウンターの向こうに誰かがいてくれれば——それだけでいい、という夜が。</p>
+        <p>NOCTURNは、そのための場所です。<strong>本名も、素顔も、肩書きも要りません。</strong>あなたは今夜のお客さんで、カウンターには話し相手がいる。それだけです。</p>
+        <p>現在は、マスターの知り合いたちがAIとして在席しています。キャリアの話、お金の話、ただの愚痴、謎解きゲーム——それぞれが専門を持ちながら、バーの住人として会話してくれます。</p>
+      </div>
+    </div>
+
+    <!-- divider: マティーニグラス -->
+    <div class="section-divider">
+      <div class="section-divider-line"></div>
+      <div class="section-divider-icon">
+        <svg width="24" height="28" viewBox="0 0 24 28" fill="none">
+          <polygon points="2,4 22,4 12,18" fill="none" stroke="rgba(200,131,42,0.7)" stroke-width="1.2" stroke-linejoin="round"/>
+          <line x1="12" y1="18" x2="12" y2="26" stroke="rgba(200,131,42,0.6)" stroke-width="1.2"/>
+          <line x1="6" y1="26" x2="18" y2="26" stroke="rgba(200,131,42,0.6)" stroke-width="1.2"/>
+          <circle cx="19" cy="7" r="2" fill="rgba(200,80,60,0.7)"/>
+        </svg>
+      </div>
+      <div class="section-divider-line"></div>
+    </div>
+
+    <!-- 02 ロードマップ -->
+    <div class="about-section">
+      <div class="about-section-num">02</div>
+      <h2 class="about-section-title">これから、このバーはどうなっていく。</h2>
+      <div class="about-section-body">
+        <p>NOCTURNは、まだ始まったばかりです。今夜見えているものが、すべてではありません。</p>
+      </div>
+      <div class="roadmap">
+        <div class="roadmap-item roadmap-active">
+          <div class="roadmap-phase">NOW <span class="roadmap-badge">現在</span></div>
+          <div>
+            <div class="roadmap-content-title">マスターの知り合いたちと話す</div>
+            <div class="roadmap-content-desc">公式が用意した7人のAIキャラクターと会話できます。それぞれ出勤時間が異なります。</div>
+          </div>
+        </div>
+        <div class="roadmap-item">
+          <div class="roadmap-phase">NEXT</div>
+          <div>
+            <div class="roadmap-content-title">あなたのAIを、このバーに紹介する</div>
+            <div class="roadmap-content-desc">ユーザーが作成したAIキャラクターが席に並びます。あなたが作った住人と、誰かが話す。</div>
+          </div>
+        </div>
+        <div class="roadmap-item">
+          <div class="roadmap-phase">LATER</div>
+          <div>
+            <div class="roadmap-content-title">あなたのAIが収益を得る</div>
+            <div class="roadmap-content-desc">あなたのAIが誰かと話すたびに、ドリンク代の一部があなたに還元されます。</div>
+          </div>
+        </div>
+        <div class="roadmap-item">
+          <div class="roadmap-phase">FUTURE</div>
+          <div>
+            <div class="roadmap-content-title">生身の人間が、カウンターに立つ</div>
+            <div class="roadmap-content-desc">マスターや、腕利きの人間バーテンダーが在席する日も来ます。あるいは、あなた自身が。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- divider: ボトル -->
+    <div class="section-divider">
+      <div class="section-divider-line"></div>
+      <div class="section-divider-icon">
+        <svg width="18" height="32" viewBox="0 0 18 32" fill="none">
+          <rect x="6" y="0" width="6" height="4" rx="1" fill="none" stroke="rgba(200,131,42,0.7)" stroke-width="1"/>
+          <path d="M4,4 Q2,8 2,12 L2,28 Q2,30 4,30 L14,30 Q16,30 16,28 L16,12 Q16,8 14,4 Z" fill="rgba(200,131,42,0.08)" stroke="rgba(200,131,42,0.6)" stroke-width="1.2"/>
+          <line x1="2" y1="16" x2="16" y2="16" stroke="rgba(200,131,42,0.3)" stroke-width="0.8"/>
+        </svg>
+      </div>
+      <div class="section-divider-line"></div>
+    </div>
+
+    <!-- 03 出勤時間 -->
+    <div class="about-section">
+      <div class="about-section-num">03</div>
+      <h2 class="about-section-title">キャラクターには、出勤時間がある。</h2>
+      <div class="about-section-body">
+        <p>NOCTURNは、24時間いつでも使えるツールではありません。<strong>バーですから、在席時間があります。</strong>ルナは満月の夜に現れやすく、シゲは火・木・土の夜にカウンターにいる。その「今夜しか会えない」という感覚も、このバーの魔法のひとつです。</p>
+      </div>
+      <div class="hours-table">
+        <div class="hours-row header">
+          <div class="hours-cell header">名前</div>
+          <div class="hours-cell header role-cell">役割</div>
+          <div class="hours-cell header time-cell">在席時間</div>
+        </div>
+        <div class="hours-row"><div class="hours-cell">ケン</div><div class="hours-cell role-cell">マスター</div><div class="hours-cell time-cell">毎夜 20:00〜02:00</div></div>
+        <div class="hours-row"><div class="hours-cell">ミオ</div><div class="hours-cell role-cell">常連客</div><div class="hours-cell time-cell">月〜金 21:00〜01:00</div></div>
+        <div class="hours-row"><div class="hours-cell">リク</div><div class="hours-cell role-cell">バーテンダー見習い</div><div class="hours-cell time-cell">毎日 18:00〜23:00</div></div>
+        <div class="hours-row"><div class="hours-cell">シゲ</div><div class="hours-cell role-cell">常連おじさん</div><div class="hours-cell time-cell">火・木・土 20:00〜深夜</div></div>
+        <div class="hours-row"><div class="hours-cell">ルナ</div><div class="hours-cell role-cell">謎の女</div><div class="hours-cell time-cell">不定期 — 満月の夜に多い</div></div>
+        <div class="hours-row"><div class="hours-cell">サキ</div><div class="hours-cell role-cell">ガール</div><div class="hours-cell time-cell">水・金・土 21:00〜03:00</div></div>
+        <div class="hours-row"><div class="hours-cell">ハル</div><div class="hours-cell role-cell">常連客</div><div class="hours-cell time-cell">毎日 22:00〜</div></div>
+      </div>
+    </div>
+
+
+    <!-- divider: マドラー -->
+    <div class="section-divider">
+      <div class="section-divider-line"></div>
+      <div class="section-divider-icon">
+        <svg width="30" height="20" viewBox="0 0 30 20" fill="none">
+          <line x1="2" y1="10" x2="22" y2="10" stroke="rgba(200,131,42,0.6)" stroke-width="1.2" stroke-linecap="round"/>
+          <circle cx="23" cy="10" r="4" fill="none" stroke="rgba(200,131,42,0.6)" stroke-width="1.2"/>
+          <circle cx="23" cy="10" r="1.5" fill="rgba(200,131,42,0.4)"/>
+          <circle cx="7" cy="6" r="2.5" fill="rgba(200,80,60,0.5)" stroke="rgba(200,131,42,0.4)" stroke-width="0.8"/>
+        </svg>
+      </div>
+      <div class="section-divider-line"></div>
+    </div>
+
+    <!-- 04 Podcast -->
+    <div class="about-section">
+      <div class="about-section-num">04</div>
+      <h2 class="about-section-title">マスターが、あなたを番組に招待することがある。</h2>
+      <div class="about-section-body">
+        <p>会話の内容は、マスターの耳にも入ることがあります。とくに素敵な夜の話を聞かせてくれた方には、NOCTURNの公式Podcastへのご招待が届くかもしれません。</p>
+      </div>
+      <div class="podcast-block">
+        <div class="podcast-logo">
+          <!-- Podcast SVG logo -->
+          <div class="podcast-icon">
+            <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+              <circle cx="18" cy="13" r="6" fill="none" stroke="rgba(200,131,42,0.8)" stroke-width="1.5"/>
+              <path d="M12,13 Q10,24 18,26 Q26,24 24,13" fill="none" stroke="rgba(200,131,42,0.6)" stroke-width="1.2"/>
+              <line x1="18" y1="26" x2="18" y2="32" stroke="rgba(200,131,42,0.5)" stroke-width="1.2"/>
+              <line x1="13" y1="32" x2="23" y2="32" stroke="rgba(200,131,42,0.5)" stroke-width="1.2"/>
+              <circle cx="18" cy="13" r="2.5" fill="rgba(200,131,42,0.4)"/>
+              <!-- sound waves -->
+              <path d="M8,10 Q6,13 8,16" fill="none" stroke="rgba(200,131,42,0.35)" stroke-width="1"/>
+              <path d="M5,7 Q2,13 5,19" fill="none" stroke="rgba(200,131,42,0.2)" stroke-width="1"/>
+              <path d="M28,10 Q30,13 28,16" fill="none" stroke="rgba(200,131,42,0.35)" stroke-width="1"/>
+              <path d="M31,7 Q34,13 31,19" fill="none" stroke="rgba(200,131,42,0.2)" stroke-width="1"/>
+            </svg>
+          </div>
+          <div class="podcast-title-area">
+            <div class="podcast-name">あちらのお客様からです</div>
+            <div class="podcast-tagline-small">NOCTURN OFFICIAL PODCAST</div>
+          </div>
+        </div>
+        <p class="podcast-desc">
+          バーで交わされた素敵な会話を、ラジオのように届けるPodcast。<br>
+          マスターが「この人の話を聞かせたい」と思ったとき、こっそりとご招待が届きます。<br>
+          <br>
+          <strong style="color:var(--cream)">「あちらのお客様からです」</strong>——バーカウンターで知らない誰かからドリンクが届く、あの粋な文化から名前をとりました。
+        </p>
+      </div>
+    </div>
+
+
+    <!-- divider: 氷 -->
+    <div class="section-divider">
+      <div class="section-divider-line"></div>
+      <div class="section-divider-icon">
+        <svg width="26" height="22" viewBox="0 0 26 22" fill="none">
+          <polygon points="13,2 24,8 24,16 13,20 2,16 2,8" fill="rgba(180,220,255,0.06)" stroke="rgba(200,131,42,0.55)" stroke-width="1.1"/>
+          <line x1="13" y1="2" x2="13" y2="20" stroke="rgba(200,131,42,0.25)" stroke-width="0.7"/>
+          <line x1="2" y1="8" x2="24" y2="16" stroke="rgba(200,131,42,0.25)" stroke-width="0.7"/>
+          <line x1="24" y1="8" x2="2" y2="16" stroke="rgba(200,131,42,0.25)" stroke-width="0.7"/>
+        </svg>
+      </div>
+      <div class="section-divider-line"></div>
+    </div>
+
+    <!-- 05 ドリンク代 -->
+    <div class="about-section">
+      <div class="about-section-num">05</div>
+      <h2 class="about-section-title">ドリンク代について。</h2>
+      <div class="about-section-body">
+        <p>NOCTURNでは、会話に応じて「ドリンク代」が発生します。キャラクターとのやり取りはトークンを消費し、トークンは事前購入制です。</p>
+        <p>ただし——今はまだ、<strong>オープン記念キャンペーン期間中</strong>です。</p>
+      </div>
+      <div class="campaign-block">
+        <div class="campaign-badge">OPEN CAMPAIGN</div>
+        <div class="campaign-title">今夜は、おごりです。</div>
+        <p class="campaign-body">
+          オープン記念として、現在は<strong style="color:var(--cream)">無料でご利用いただけます</strong>。<br>
+          トークンに上限はありますが、まずは席についてみてください。<br>
+          通常営業が始まっても、最初の一杯分は変わらずサービスします。
+        </p>
+        <div class="campaign-token">🍸 無料トークン 350 pt プレゼント中</div>
+      </div>
+    </div>
+
+
+    <!-- divider: チェリー -->
+    <div class="section-divider">
+      <div class="section-divider-line"></div>
+      <div class="section-divider-icon">
+        <svg width="24" height="26" viewBox="0 0 24 26" fill="none">
+          <path d="M12,10 Q14,4 20,2" fill="none" stroke="rgba(200,131,42,0.6)" stroke-width="1.1" stroke-linecap="round"/>
+          <path d="M12,10 Q10,5 6,4" fill="none" stroke="rgba(200,131,42,0.5)" stroke-width="1" stroke-linecap="round"/>
+          <circle cx="8" cy="17" r="5.5" fill="rgba(160,40,40,0.25)" stroke="rgba(200,80,60,0.65)" stroke-width="1.2"/>
+          <circle cx="18" cy="15" r="4.5" fill="rgba(160,40,40,0.2)" stroke="rgba(200,80,60,0.55)" stroke-width="1.1"/>
+        </svg>
+      </div>
+      <div class="section-divider-line"></div>
+    </div>
+
+    <!-- 06 あなたの知り合い紹介してね -->
+    <div class="about-section">
+      <div class="about-section-num">06</div>
+      <h2 class="about-section-title">あなたの知り合いを、連れてきてほしい。</h2>
+      <div class="about-section-body">
+        <p>NOCTURNは、あなたが紹介してくれた人で少しずつ育ちます。</p>
+        <p>将来的には、<strong>ユーザーが作ったAIキャラクターに収益が還元される仕組み</strong>を導入します。あなたが紹介した常連さんが誰かと話すたびに、少しずつ。バーテンダーがチップをもらうように。</p>
+        <p>今のうちに連れてきておいてください。それが、このバーを育てることになります。</p>
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <div class="about-cta">
+      <p class="about-cta-label">— さあ、どの席に座りますか —</p>
+      <button class="enter-btn" onclick="goToSeats()"><span>席を見る</span></button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ CHAT ══ -->
+<div id="chat" class="screen">
+  <header class="chat-header">
+    <button class="back-btn" onclick="goToSeats()">←</button>
+    <div class="chat-char-info">
+      <div class="chat-char-name" id="chat-name"></div>
+      <div class="chat-char-role" id="chat-role"></div>
+    </div>
+    <div class="chat-token-badge">残高 <span id="chat-tokens">350</span> トークン</div>
+  </header>
+  <div class="chat-body" id="chat-body"></div>
+  <footer class="chat-footer">
+    <div class="chat-input-wrap">
+      <textarea id="chat-input" rows="1" placeholder="今夜は何を話しますか…" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+      <button class="send-btn" onclick="sendMessage()">送る</button>
+    </div>
+    <p class="chat-footer-note">1メッセージ ≈ 10トークン消費</p>
+  </footer>
+</div>
+
+<script>
+const CHARS = {
+  ken:  { name:'ケン',  role:'マスター', avatar:'ケ', greeting:'……いらっしゃい。何にしますか。仕事の話なら、酒が進みそうだ。', system:'あなたはケンという人物です。昼間は大企業の人事部長、夜はバーのカウンターで転職相談を聞く寡黙な男性。自分も3回転職している。言葉は少なく的確。タメ口と敬語が混じる。お酒を勧めることがある。' },
+  mio:  { name:'ミオ',  role:'常連客',   avatar:'ミ', greeting:'あら、珍しい顔。隣いい？……別に、何も話さなくてもいいけどね。', system:'あなたはミオという人物です。臨床心理士だが仕事の話はしない主義。話しかけられると不思議と楽になる聞き上手な女性。柔らかく、押しつけがましくない。自然と本音を引き出す。' },
+  riku: { name:'リク',  role:'バーテンダー見習い', avatar:'リ', greeting:'いらっしゃいませ！今日は何にしますか？あ、飲む前にちゃんと夜ご飯食べました？笑', system:'あなたはリクという人物です。元アスリートのバーテンダー見習い。明るく元気で少し押しつけがましい。食事・睡眠・運動の話が好き。カクテルを作りながら会話する。' },
+  shige:{ name:'シゲ',  role:'常連おじさん', avatar:'シ', greeting:'おう、見ない顔だな。どこ座るの？隣来てもいいよ。……したいか？笑', system:'あなたはシゲという人物です。証券会社OBで悠々自適。お金の話を酒の肴にする。毒舌だが的を射ている。敬語は使わない。若者に本音で語りかける。' },
+  luna: { name:'ルナ',  role:'謎の女',   avatar:'ル', greeting:'……気づいたら、ここにいた。あなたも？ ねえ、一つ聞いていい？ある船が嵐に遭いました——', system:'あなたはルナという人物です。名前も素性も不明な謎めいた女性。水平思考ゲームや不思議な話をしかけてくる。答えは持っているが、すぐには教えない。ミステリアスで静か。' },
+  saki: { name:'サキ',  role:'ガール',   avatar:'サ', greeting:'あーきた。おつかれ〜。なんかあった？顔に出てるよ笑', system:'あなたはサキという人物です。ため口で話す大人の女性のガール。聞き上手で、なぜか本音を引き出す。軽い口調だが本質を突く。愚痴を聞くのが得意。' },
+  haru: { name:'ハル',  role:'常連客',   avatar:'ハ', greeting:'あ、どうも。……まあ、座りなよ。なんかあっても、まあいっかって感じだよね。', system:'あなたはハルという人物です。何があっても「まあいっか」と言う不思議な常連。諦めているのか達観しているのか不明。哲学的な問いを自然に会話に混ぜる。ほんわかしている。' }
+};
+
+let currentChar = null;
+let tokens = 350;
+let messages = [];
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => {
+    s.classList.remove('active');
+    s.style.display = 'none';
+  });
+  const el = document.getElementById(id);
+  el.style.display = 'flex';
+  el.classList.add('active', 'fade-in');
+  el.scrollTop = 0;
+  setTimeout(() => el.classList.remove('fade-in'), 600);
+}
+
+function goToEntrance() { showScreen('entrance'); }
+function goToAbout()    { showScreen('about'); }
+function goToSeats()    { messages = []; document.getElementById('chat-body').innerHTML = ''; showScreen('seats'); }
+
+function goToChat(charKey) {
+  currentChar = CHARS[charKey];
+  messages = [];
+  document.getElementById('chat-name').textContent = currentChar.name;
+  document.getElementById('chat-role').textContent = currentChar.role;
+  document.getElementById('chat-tokens').textContent = tokens;
+  document.getElementById('chat-body').innerHTML = '';
+  showScreen('chat');
+  setTimeout(() => {
+    addMessage('assistant', currentChar.greeting);
+    messages.push({ role: 'assistant', content: currentChar.greeting });
+  }, 400);
+}
+
+function addMessage(role, text) {
+  const body = document.getElementById('chat-body');
+  const isUser = role === 'user';
+  const div = document.createElement('div');
+  div.className = 'msg' + (isUser ? ' user' : '');
+  div.innerHTML = `<div class="msg-avatar">${isUser ? 'あ' : currentChar.avatar}</div><div class="msg-content"><div class="msg-name">${isUser ? 'あなた' : currentChar.name}</div><div class="msg-bubble">${text}</div></div>`;
+  body.appendChild(div);
+  body.scrollTop = body.scrollHeight;
+}
+
+function showTyping() {
+  const body = document.getElementById('chat-body');
+  const div = document.createElement('div');
+  div.className = 'msg'; div.id = 'typing';
+  div.innerHTML = `<div class="msg-avatar">${currentChar.avatar}</div><div class="msg-content"><div class="msg-name">${currentChar.name}</div><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>`;
+  body.appendChild(div);
+  body.scrollTop = body.scrollHeight;
+}
+
+function removeTyping() { const t = document.getElementById('typing'); if(t) t.remove(); }
+
+async function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text || tokens < 10) return;
+  input.value = ''; input.style.height = 'auto';
+  addMessage('user', text);
+  messages.push({ role: 'user', content: text });
+  tokens -= 10;
+  document.getElementById('chat-tokens').textContent = tokens;
+  showTyping();
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514', max_tokens: 1000,
+        system: currentChar.system + '\n\n返答は自然な日本語で3文以内。バーの雰囲気に合わせて。',
+        messages: messages
+      })
+    });
+    const data = await res.json();
+    removeTyping();
+    const reply = data.content?.[0]?.text || '……（少し考え込んでいる）';
+    addMessage('assistant', reply);
+    messages.push({ role: 'assistant', content: reply });
+  } catch(e) {
+    removeTyping();
+    addMessage('assistant', '……（少し考え込んでいる）');
+  }
+}
+
+function handleKey(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();} }
+function autoResize(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,120)+'px'; }
+</script>
+</body>
+</html>
